@@ -1,1 +1,1 @@
-.# studentapp
+# studentapp
