@@ -367,24 +367,3 @@ export interface SortOptions {
   field: string;
   order: 'asc' | 'desc';
 }
-
-// Export all types
-export type {
-  User,
-  Student,
-  Teacher,
-  Course,
-  Attendance,
-  Assignment,
-  Grade,
-  Event,
-  Company,
-  JobPosting,
-  Club,
-  Notification,
-  VaultFile,
-  CalendarEvent,
-  Analytics,
-  LeaderboardEntry,
-  Department,
-};

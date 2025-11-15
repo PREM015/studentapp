@@ -17,7 +17,6 @@ function Calendar({
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
-      captionLayout="buttons" // IMPORTANT FOR LEFT/RIGHT BUTTONS
       className={cn("p-3", className)}
       classNames={{
         months: "flex flex-col sm:flex-row gap-2",
@@ -25,7 +24,6 @@ function Calendar({
         caption: "flex justify-center pt-1 relative items-center w-full",
         caption_label: "text-sm font-medium",
 
-        // Navigation buttons
         nav: "flex items-center gap-1",
         nav_button: cn(
           buttonVariants({ variant: "outline" }),

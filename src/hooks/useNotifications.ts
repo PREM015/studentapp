@@ -57,7 +57,7 @@ export const useNotifications = () => {
     setNotifications([]);
   };
 
-  const addNotification = (notification: Omit<Notification, 'id'>) => {
+  const addNotification = (notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => {
     const newNotification: Notification = {
       ...notification,
       id: Date.now(),

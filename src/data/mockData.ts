@@ -1,6 +1,8 @@
 // Complete Sample Data for SmartCurriculum Platform
 // This file contains all mock data used throughout the application
 
+import { Notification } from '../types';
+
 export const SAMPLE_STUDENTS = [
   {
     id: 1,
@@ -399,34 +401,34 @@ export const SAMPLE_CLUBS = [
   },
 ];
 
-export const SAMPLE_NOTIFICATIONS = [
+export const SAMPLE_NOTIFICATIONS: Notification[] = [
   {
     id: 1,
-    type: 'assignment',
+    type: 'assignment' as const,
     title: 'New Assignment Posted',
     message: 'CS301: Machine Learning Project has been posted',
     timestamp: '2024-11-07T10:30:00Z',
     read: false,
-    priority: 'high',
+    priority: 'high' as const,
     link: '/coursework',
   },
   {
     id: 2,
-    type: 'attendance',
+    type: 'attendance' as const,
     title: 'Attendance Marked',
     message: 'Your attendance for CS301 has been marked as Present',
     timestamp: '2024-11-07T09:05:00Z',
     read: false,
-    priority: 'medium',
+    priority: 'medium' as const,
   },
   {
     id: 3,
-    type: 'grade',
+    type: 'grade' as const,
     title: 'Grade Published',
     message: 'Your grade for Assignment 2 is now available',
     timestamp: '2024-11-06T15:20:00Z',
     read: true,
-    priority: 'medium',
+    priority: 'medium' as const,
     link: '/coursework',
   },
 ];
