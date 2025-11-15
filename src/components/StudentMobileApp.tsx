@@ -1,3 +1,4 @@
+"use client"
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import StudentLogin from './student/StudentLogin';
@@ -9,13 +10,9 @@ import StudentVault from './student/StudentVault';
 import StudentCoursework from './student/StudentCoursework';
 
 export default function StudentMobileApp() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
   const [activeTab, setActiveTab] = useState('dashboard');
-
-  if (!isLoggedIn) {
-    return <StudentLogin onLogin={() => setIsLoggedIn(true)} />;
-  }
-
+  
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen relative pb-20">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

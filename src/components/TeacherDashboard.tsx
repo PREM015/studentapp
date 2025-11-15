@@ -1,10 +1,6 @@
+"use client"
 import { useState } from 'react';
-import { Card } from './ui/card';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
 import { Input } from './ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { Progress } from './ui/progress';
 import { 
   BookOpen, Users, CheckCircle, TrendingUp, Clock, Calendar, 
   Bell, Search, GraduationCap, FileText, BarChart3, Settings,

@@ -1,24 +1,20 @@
-import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { errorResponse, successResponse } from '@/lib/api-response';
+import { getSession } from 'next-auth/react';
+import { NextRequest } from 'next/server';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    await prisma.$queryRaw`SELECT 1`;
-
-    return NextResponse.json({
-      ok: true,
-      message: "Prisma + Neon connection working",
-    });
-  } catch (error: unknown) {
-    let message = "Unknown error";
-
-    if (error instanceof Error) {
-      message = error.message;
+    const session = await getSession();
+    
+    if (!session) {
+      return errorResponse('Unauthorized', 401);
     }
 
-    return NextResponse.json({
-      ok: false,
-      error: message,
+    return successResponse({
+      authenticated: true,
+      user: session.user,
     });
+  } catch (error) {
+    return errorResponse('Failed to check authentication');
   }
 }

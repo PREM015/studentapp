@@ -1,76 +1,686 @@
+// Prisma schema for SmartCurriculum Platform (Fixed)
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
+// ---------- ENUMS ----------
+
+enum UserRole {
+  student
+  teacher
+  tpc
+  club
+  university
+}
+
+enum UserStatus {
+  active
+  inactive
+  suspended
+}
+
+enum CourseStatus {
+  Active
+  Completed
+  Upcoming
+}
+
+enum AttendanceStatus {
+  present
+  absent
+  late
+}
+
+enum AttendanceMethod {
+  QRCode
+  CodeEntry
+  Manual
+}
+
+enum AssignmentStatus {
+  NotStarted
+  InProgress
+  Submitted
+  Graded
+}
+
+enum EventType {
+  Conference
+  Workshop
+  Competition
+  Seminar
+  Social
+}
+
+enum EventStatus {
+  Upcoming
+  Ongoing
+  Completed
+  Cancelled
+  RegistrationOpen
+}
+
+enum CompanyStatus {
+  Active
+  Inactive
+}
+
+enum JobType {
+  Fulltime
+  Parttime
+  Internship
+  Contract
+}
+
+enum JobStatus {
+  Open
+  Closed
+  Filled
+}
+
+enum ClubCategory {
+  Technical
+  Cultural
+  Sports
+  Social
+  Academic
+}
+
+enum NotificationType {
+  assignment
+  attendance
+  grade
+  event
+  announcement
+  alert
+}
+
+enum NotificationPriority {
+  low
+  medium
+  high
+}
+
+enum FileType {
+  pdf
+  image
+  document
+  video
+  other
+}
+
+enum FileCategory {
+  Documents
+  Certificates
+  IDs
+  Photos
+  Other
+}
+
+enum CalendarEventType {
+  class
+  exam
+  deadline
+  event
+  holiday
+}
+
+enum ThemeChoice {
+  light
+  dark
+  auto
+}
+
+// ---------- MODELS ----------
+
 model User {
-  id            String         @id @default(cuid())
-  name          String
-  email         String         @unique
-  profileImage  String?
-  createdAt     DateTime       @default(now())
-  updatedAt DateTime @updatedAt
+  id           Int        @id @default(autoincrement())
+  name         String
+  email        String     @unique
+  role         UserRole
+  profileImage String?
+  status       UserStatus @default(active)
 
+  // Relations for role-specific profiles
+  student   Student?
+  teacher   Teacher?
+
+  // Common relations
   notifications Notification[]
-  students      Student[]
-
-  @@map("users")
+  vaultFiles    VaultFile[]    @relation("UploadedBy")
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  userSettings  UserSettings?
 }
 
 model Student {
-  id                 String             @id @default(cuid())
-  phone              String?
-  course             String?
-  createdAt          DateTime           @default(now())
+  id     Int  @id @default(autoincrement())
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int  @unique
+
+  rollNo        String     @unique
+  departmentId  Int
+  department    Department @relation(fields: [departmentId], references: [id])
+  batch         String
+  semester      Int
+  section       String
+  cgpa          Float      @default(0)
+  attendance    Float      @default(0)
+  phone         String
+  dateOfBirth   DateTime
+  address       String?
+  guardianName  String?
+  guardianPhone String?
+  joinDate      DateTime
+  points        Int        @default(0)
+  rank          Int?
+
+  // normalized badges
+  badges Badge[]
+
+  // relations
+  enrollments        Enrollment[]
+  attendances        Attendance[]
+  assignments        Submission[]
+  grades             Grade[]
+  leaderboardEntries LeaderboardEntry[]
+  vaultFiles         VaultFile[]        @relation("OwnedVaultFiles")
+
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  eventRegistrations EventRegistration[]
+  clubMembers        ClubMember[]
+}
+
+model Teacher {
+  id     Int  @id @default(autoincrement())
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int  @unique
+
+  employeeId    String     @unique
+  departmentId  Int
+  department    Department @relation(fields: [departmentId], references: [id])
+  designation   String
+  phone         String
+  officeRoom    String
+  officeHours   String
+  joinDate      DateTime
+  totalStudents Int        @default(0)
+  rating        Float      @default(0)
+  publications  Int?
+  experience    String
+
+  // normalized
+  specializations Specialization[]
+  educations      Education[]
+  achievements    Achievement[]
+
+  courses   Course[]
+  createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
 
-  userId             String
-  course_enrollments CourseEnrollment[]
-  users              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+model Education {
+  id         Int     @id @default(autoincrement())
+  teacher    Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  teacherId  Int
+  degree     String
+  university String
+  year       String
+}
 
-  @@map("students")
+model Achievement {
+  id        Int     @id @default(autoincrement())
+  teacher   Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  teacherId Int
+  title     String
+  year      String
+}
+
+model Specialization {
+  id        Int     @id @default(autoincrement())
+  teacher   Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  teacherId Int
+  name      String
+}
+
+model Badge {
+  id        Int      @id @default(autoincrement())
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  studentId Int
+  name      String
+  issuedAt  DateTime @default(now())
+}
+
+model Department {
+  id           Int                     @id @default(autoincrement())
+  name         String
+  code         String                  @unique
+  hod          String
+  faculty      Int                     @default(0)
+  studentsCount Int                    @default(0)
+  coursesCount Int                     @default(0)
+  labs         Int                     @default(0)
+  achievements DepartmentAchievement[]
+  teachers     Teacher[]
+  createdAt    DateTime                @default(now())
+  updatedAt    DateTime                @updatedAt
+  students     Student[]
+  courses      Course[]
+}
+
+model DepartmentAchievement {
+  id           Int        @id @default(autoincrement())
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  departmentId Int
+  description  String
 }
 
 model Course {
-  id                 String             @id @default(cuid())
-  name               String
-  code               String             @unique
-  description        String?
-  credits            Int                @default(3)
-  createdAt          DateTime           @default(now())
- updatedAt DateTime @updatedAt
+  id            Int          @id @default(autoincrement())
+  code          String       @unique
+  name          String
+  credits       Int
+  semester      Int
+  departmentId  Int
+  department    Department   @relation(fields: [departmentId], references: [id])
+  instructorId  Int
+  instructor    Teacher      @relation(fields: [instructorId], references: [id])
+  enrolledCount Int          @default(0)
+  maxCapacity   Int
+  syllabus      String?
+  description   String?
+  progress      Float        @default(0)
+  status        CourseStatus @default(Active)
 
-  course_enrollments CourseEnrollment[]
+  schedules   Schedule[]
+  enrollments Enrollment[]
+  assignments Assignment[]
+  grades      Grade[]
 
-  @@map("courses")
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  attendances Attendance[]
 }
 
-model CourseEnrollment {
-  id         String   @id @default(cuid())
-  studentId  String
-  courseId   String
+model Schedule {
+  id       Int    @id @default(autoincrement())
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId Int
+  day      String
+  time     String
+  room     String
+}
+
+model Enrollment {
+  id         Int      @id @default(autoincrement())
+  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  studentId  Int
+  course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId   Int
   enrolledAt DateTime @default(now())
-  grade      String?
-  courses    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  students   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  status     String   @default("enrolled")
+  progress   Float    @default(0)
 
   @@unique([studentId, courseId])
-  @@map("course_enrollments")
+}
+
+model Attendance {
+  id        Int               @id @default(autoincrement())
+  student   Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  studentId Int
+  course    Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId  Int
+  date      DateTime
+  status    AttendanceStatus
+  markedAt  DateTime?
+  method    AttendanceMethod?
+  latitude  Float?
+  longitude Float?
+
+  createdAt DateTime @default(now())
+
+  @@index([studentId, courseId, date])
+}
+
+model Assignment {
+  id          Int              @id @default(autoincrement())
+  title       String
+  course      Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId    Int
+  description String?
+  dueDate     DateTime
+  totalPoints Int
+  status      AssignmentStatus @default(NotStarted)
+
+  rubric      RubricCriteria[]
+  submissions Submission[]
+  attachments AssignmentAttachment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RubricCriteria {
+  id           Int        @id @default(autoincrement())
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  assignmentId Int
+  criteria     String
+  points       Int
+}
+
+model Submission {
+  id           Int              @id @default(autoincrement())
+  assignment   Assignment       @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  assignmentId Int
+  student      Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  studentId    Int
+  submittedAt  DateTime?
+  grade        Float?
+  feedback     String?
+  status       AssignmentStatus @default(NotStarted)
+  earnedPoints Int?
+
+  attachments SubmissionAttachment[]
+
+  @@unique([assignmentId, studentId])
+}
+
+model AssignmentAttachment {
+  id           Int        @id @default(autoincrement())
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  assignmentId Int
+  vaultFile    VaultFile  @relation(fields: [vaultFileId], references: [id], onDelete: Cascade)
+  vaultFileId  Int
+}
+
+model SubmissionAttachment {
+  id           Int        @id @default(autoincrement())
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  submissionId Int
+  vaultFile    VaultFile  @relation(fields: [vaultFileId], references: [id], onDelete: Cascade)
+  vaultFileId  Int
+}
+
+model Grade {
+  id          Int     @id @default(autoincrement())
+  student     Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  studentId   Int
+  course      Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId    Int
+  totalScore  Float   @default(0)
+  grade       String?
+  letterGrade String?
+
+  items GradeItem[]
+
+  @@unique([studentId, courseId])
+}
+
+model GradeItem {
+  id      Int    @id @default(autoincrement())
+  grade   Grade  @relation(fields: [gradeId], references: [id], onDelete: Cascade)
+  gradeId Int
+  name    String
+  score   Float
+  total   Float
+}
+
+model Event {
+  id              Int         @id @default(autoincrement())
+  title           String
+  type            EventType
+  date            DateTime
+  time            String?
+  location        String
+  organizer       String
+  description     String?
+  registeredCount Int         @default(0)
+  maxCapacity     Int
+  status          EventStatus @default(Upcoming)
+  image           String?
+
+  tags          EventTag[]
+  registrations EventRegistration[]
+
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  clubEvents ClubEvent[]
+}
+
+model EventTag {
+  id      Int    @id @default(autoincrement())
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId Int
+  tag     String
+}
+
+model EventRegistration {
+  id           Int      @id @default(autoincrement())
+  event        Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId      Int
+  student      Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  studentId    Int
+  registeredAt DateTime @default(now())
+
+  @@unique([eventId, studentId])
+}
+
+model Company {
+  id                  Int           @id @default(autoincrement())
+  name                String
+  logo                String?
+  industry            String
+  location            String
+  employeeCount       String
+  website             String?
+  description         String?
+  jobOpenings         Int           @default(0)
+  averagePackage      String?
+  recruitmentDrive    String?
+  eligibilityCriteria String?
+  contactPerson       String?
+  contactEmail        String?
+  status              CompanyStatus @default(Active)
+
+  jobPostings JobPosting[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model JobPosting {
+  id                  Int       @id @default(autoincrement())
+  company             Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId           Int
+  title               String
+  type                JobType
+  location            String
+  duration            String?
+  stipend             String?
+  package             String?
+  description         String?
+  applicationDeadline DateTime
+  appliedCount        Int       @default(0)
+  shortlistedCount    Int       @default(0)
+  status              JobStatus @default(Open)
+  postedDate          DateTime  @default(now())
+
+  requirements JobRequirement[]
+  skills       JobSkill[]
+}
+
+model JobRequirement {
+  id           Int        @id @default(autoincrement())
+  jobPosting   JobPosting @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
+  jobPostingId Int
+  requirement  String
+}
+
+model JobSkill {
+  id           Int        @id @default(autoincrement())
+  jobPosting   JobPosting @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
+  jobPostingId Int
+  skill        String
+}
+
+model Club {
+  id             Int          @id @default(autoincrement())
+  name           String
+  logo           String?
+  category       ClubCategory
+  description    String?
+  memberCount    Int          @default(0)
+  president      String
+  vicePresident  String?
+  faculty        String
+  email          String
+  upcomingEvents Int          @default(0)
+  pastEvents     Int          @default(0)
+  status         UserStatus   @default(active)
+
+  socialLinks  ClubSocialLink[]
+  members      ClubMember[]
+  achievements ClubAchievement[]
+  events       ClubEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ClubSocialLink {
+  id       Int    @id @default(autoincrement())
+  club     Club   @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  clubId   Int
+  platform String
+  url      String
+}
+
+model ClubMember {
+  id        Int      @id @default(autoincrement())
+  club      Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  clubId    Int
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  studentId Int
+  role      String
+  joinedAt  DateTime @default(now())
+
+  @@unique([clubId, studentId])
+}
+
+model ClubAchievement {
+  id          Int    @id @default(autoincrement())
+  club        Club   @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  clubId      Int
+  description String
+}
+
+model ClubEvent {
+  id      Int   @id @default(autoincrement())
+  club    Club  @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  clubId  Int
+  event   Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId Int
 }
 
 model Notification {
-  id        String   @id @default(cuid())
-  userId    String
+  id        Int                  @id @default(autoincrement())
+  user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  type      NotificationType
   title     String
   message   String
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
-  users     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  timestamp DateTime             @default(now())
+  read      Boolean              @default(false)
+  priority  NotificationPriority
+  link      String?
+  icon      String?
 
-  @@map("notifications")
+  @@index([userId, read])
+}
+
+model VaultFile {
+  id         Int          @id @default(autoincrement())
+  name       String
+  type       FileType
+  size       Int
+  uploadedAt DateTime     @default(now())
+  category   FileCategory
+  url        String?
+
+  // ownership: uploader
+  uploadedBy   User? @relation("UploadedBy", fields: [uploadedById], references: [id])
+  uploadedById Int?
+
+  // ownership: student-owned vault files
+  ownerStudent   Student? @relation("OwnedVaultFiles", fields: [ownerStudentId], references: [id])
+  ownerStudentId Int?
+
+  assignmentAttachments AssignmentAttachment[]
+  submissionAttachments SubmissionAttachment[]
+}
+
+model CalendarEvent {
+  id          Int               @id @default(autoincrement())
+  title       String
+  type        CalendarEventType
+  date        DateTime
+  startTime   String
+  endTime     String?
+  location    String?
+  instructor  String?
+  description String?
+  color       String
+  createdAt   DateTime          @default(now())
+}
+
+model AnalyticsSnapshot {
+  id                Int      @id @default(autoincrement())
+  recordedAt        DateTime @default(now())
+  overallAttendance Float
+  overallCGPA       Float
+  totalStudents     Int
+  activeStudents    Int
+  topPerformers     Int
+  atRiskStudents    Int
+
+  totalPlacements  Int
+  averagePackage   String?
+  highestPackage   String?
+  companiesVisited Int
+  offersReceived   Int
+  placementRate    Float
+
+  totalCourses     Int
+  activeCourses    Int
+  completedCourses Int
+  averageClassSize Float
+}
+
+model LeaderboardEntry {
+  id        Int     @id @default(autoincrement())
+  rank      Int
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  studentId Int
+  points    Int
+  badges    Int
+  avatar    String?
+}
+
+// Settings / Preferences
+model UserSettings {
+  id                 Int         @id @default(autoincrement())
+  user               User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId             Int         @unique
+  emailNotifications Boolean     @default(true)
+  pushNotifications  Boolean     @default(true)
+  smsNotifications   Boolean     @default(false)
+  theme              ThemeChoice @default(auto)
+  language           String      @default("en")
+  timezone           String      @default("UTC")
 }
