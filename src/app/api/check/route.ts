@@ -3,7 +3,6 @@ import prisma from "@/lib/prisma";
 
 export async function GET() {
   try {
-    // Harmless check – does not change or insert anything
     await prisma.$queryRaw`SELECT 1`;
 
     return NextResponse.json({
@@ -11,9 +10,15 @@ export async function GET() {
       message: "Prisma + Neon connection working",
     });
   } catch (error: unknown) {
-      return NextResponse.json({
-        ok: false,
-        error: error.message
-      });
+    let message = "Unknown error";
+
+    if (error instanceof Error) {
+      message = error.message;
+    }
+
+    return NextResponse.json({
+      ok: false,
+      error: message,
+    });
   }
 }

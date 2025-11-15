@@ -1,11 +1,11 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
     const students = await prisma.student.findMany({
       include: {
-        user: {
+        users: {   // relation to User
           select: {
             id: true,
             name: true,
@@ -13,9 +13,9 @@ export async function GET() {
             profileImage: true,
           },
         },
-        enrollments: {
+        course_enrollments: {   // relation to CourseEnrollment
           include: {
-            course: {
+            courses: {   // relation inside CourseEnrollment
               select: {
                 id: true,
                 code: true,
@@ -28,7 +28,7 @@ export async function GET() {
       },
       take: 10,
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
     });
 
@@ -38,12 +38,12 @@ export async function GET() {
       data: students,
     });
   } catch (error) {
-    console.error('Error fetching students:', error);
+    console.error("Error fetching students:", error);
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        details: error instanceof Error ? error.stack : error,
+        error: error instanceof Error ? error.message : "Unknown error",
+        details: error instanceof Error ? error.stack : String(error),
       },
       { status: 500 }
     );

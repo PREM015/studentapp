@@ -21,7 +21,8 @@ export async function POST() {
       data: {
         email: 'john.doe@university.edu',
         name: 'John Doe',
-        profileImage: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300',
+        profileImage:
+          'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300',
       },
     });
 
@@ -40,7 +41,8 @@ export async function POST() {
         code: 'CS301',
         name: 'Machine Learning',
         credits: 4,
-        description: 'Comprehensive introduction to machine learning algorithms',
+        description:
+          'Comprehensive introduction to machine learning algorithms',
       },
     });
 
@@ -75,7 +77,6 @@ export async function POST() {
         userId: user.id,
         title: 'Welcome!',
         message: 'Welcome to the Student Management System',
-        isRead: false,
       },
     });
 
@@ -84,7 +85,6 @@ export async function POST() {
         userId: user.id,
         title: 'New Assignment Posted',
         message: 'CS301: Machine Learning Project has been posted',
-        isRead: false,
       },
     });
 
@@ -108,13 +108,14 @@ export async function POST() {
         ],
       },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Seeding failed:', error);
+
     return NextResponse.json(
       {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
-        details: error instanceof Error ? error.stack : error,
+        details: error instanceof Error ? error.stack : String(error),
       },
       { status: 500 }
     );

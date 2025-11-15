@@ -14,7 +14,8 @@ model User {
   email         String         @unique
   profileImage  String?
   createdAt     DateTime       @default(now())
-  updatedAt     DateTime
+  updatedAt DateTime @updatedAt
+
   notifications Notification[]
   students      Student[]
 
@@ -26,7 +27,8 @@ model Student {
   phone              String?
   course             String?
   createdAt          DateTime           @default(now())
-  updatedAt          DateTime
+  updatedAt DateTime @updatedAt
+
   userId             String
   course_enrollments CourseEnrollment[]
   users              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -41,7 +43,8 @@ model Course {
   description        String?
   credits            Int                @default(3)
   createdAt          DateTime           @default(now())
-  updatedAt          DateTime
+ updatedAt DateTime @updatedAt
+
   course_enrollments CourseEnrollment[]
 
   @@map("courses")
