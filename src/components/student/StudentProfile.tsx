@@ -9,7 +9,7 @@ export default function StudentProfile() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header with Gradient */}
-  <div className="h-48 z-10 bg-gradient-to-r from-purple-500 via-pink-500 via-red-500 via-yellow-400 to-blue-600 relative">
+  <div className="h-48  via-yellow-400 to-blue-600 relative">
 
 
 
