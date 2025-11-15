@@ -1,51 +1,37 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { errorResponse, successResponse } from '@/lib/api-response';
+import { prisma } from '@/lib/prisma';
+import { NextRequest } from 'next/server';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const { searchParams } = new URL(req.url);
+    const departmentId = searchParams.get('departmentId');
+    const semester = searchParams.get('semester');
+    const search = searchParams.get('search');
+
+    const where: any = {};
+    
+    if (departmentId) where.departmentId = parseInt(departmentId);
+    if (semester) where.semester = parseInt(semester);
+    if (search) {
+      where.OR = [
+        { user: { name: { contains: search, mode: 'insensitive' } } },
+        { rollNo: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
     const students = await prisma.student.findMany({
+      where,
       include: {
-        users: {   // relation to User
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            profileImage: true,
-          },
-        },
-        course_enrollments: {   // relation to CourseEnrollment
-          include: {
-            courses: {   // relation inside CourseEnrollment
-              select: {
-                id: true,
-                code: true,
-                name: true,
-                credits: true,
-              },
-            },
-          },
-        },
+        user: true,
+        department: true,
+        badges: true,
       },
-      take: 10,
-      orderBy: {
-        createdAt: "desc",
-      },
+      orderBy: { rank: 'asc' },
     });
 
-    return NextResponse.json({
-      success: true,
-      count: students.length,
-      data: students,
-    });
+    return successResponse(students);
   } catch (error) {
-    console.error("Error fetching students:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
-        details: error instanceof Error ? error.stack : String(error),
-      },
-      { status: 500 }
-    );
+    return errorResponse('Failed to fetch students');
   }
 }
