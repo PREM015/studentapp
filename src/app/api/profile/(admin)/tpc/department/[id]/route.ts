@@ -4,10 +4,11 @@ import { NextRequest } from "next/server";
 
 export async function GET(
   req: NextRequest,
-  context: { params: { id: string } }
+  {params}: {params: Promise<{ id: string }>}
 ) {
   try {
-    const deptId = Number(context.params.id);
+    const {id} = await params
+    const deptId = Number(id);
 
     if (isNaN(deptId)) {
       return errorResponse("Invalid department ID", 400);

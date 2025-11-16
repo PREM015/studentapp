@@ -4,10 +4,11 @@ import { NextRequest } from "next/server";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  {params}: {params: Promise<{ id: string }>}
 ) {
   try {
-    const studentId = parseInt(params.id);
+    const {id } = await params
+    const studentId = parseInt(id);
 
     const student = await prisma.student.findUnique({
       where: { id: studentId },
@@ -47,10 +48,11 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  {params}: {params: Promise<{ id: string }>}
 ) {
   try {
-    const studentId = parseInt(params.id);
+    const {id} = await params
+    const studentId = parseInt(id);
     const body = await req.json();
 
     const student = await prisma.student.update({

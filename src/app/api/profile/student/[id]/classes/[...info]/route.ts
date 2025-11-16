@@ -5,11 +5,12 @@ import { NextRequest } from "next/server";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string; info: string[] } }
+  { params }: { params: Promise<{ id: string; info: string[] }> }
 ) {
   try {
-    const studentId = parseInt(params.id);
-    const [action, ...rest] = params.info;
+    const { id , info} = await params;
+    const studentId = parseInt(id);
+    const [action, ...rest] = info;
 
     if (action === 'upcoming') {
       const enrollments = await prisma.enrollment.findMany({

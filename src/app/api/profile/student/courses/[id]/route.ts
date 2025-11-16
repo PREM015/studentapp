@@ -4,10 +4,11 @@ import { NextRequest } from "next/server";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  {params}: {params: Promise<{ id: string }>}
 ) {
   try {
-    const courseId = parseInt(params.id);
+    const { id } = await params;
+    const courseId = parseInt(id);
     const { searchParams } = new URL(req.url);
     const studentId = searchParams.get('studentId');
 

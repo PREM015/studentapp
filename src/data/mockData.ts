@@ -168,7 +168,7 @@ export const SAMPLE_ATTENDANCE = [
     id: 1,
     studentId: 1,
     courseId: 1,
-    date: '2024-11-07',
+    date: '2024/11/07',
     status: 'present',
     markedAt: '9:05 AM',
     method: 'QR Code',
@@ -179,7 +179,7 @@ export const SAMPLE_ATTENDANCE = [
     id: 2,
     studentId: 1,
     courseId: 1,
-    date: '2024-11-04',
+    date: '2024/11/04',
     status: 'present',
     markedAt: '9:03 AM',
     method: 'Code Entry',
@@ -188,7 +188,7 @@ export const SAMPLE_ATTENDANCE = [
     id: 3,
     studentId: 1,
     courseId: 1,
-    date: '2024-11-01',
+    date: '2024/11/01',
     status: 'absent',
   },
 ];
@@ -264,6 +264,7 @@ export const SAMPLE_EVENTS = [
     maxCapacity: 300,
     status: 'Upcoming',
     tags: ['Technology', 'Networking', 'Career'],
+    image: ""
   },
   {
     id: 2,
@@ -278,6 +279,7 @@ export const SAMPLE_EVENTS = [
     maxCapacity: 150,
     status: 'Registration Open',
     tags: ['Coding', 'Competition', 'Innovation'],
+    image: ""
   },
 ];
 

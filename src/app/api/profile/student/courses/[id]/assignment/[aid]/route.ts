@@ -5,10 +5,11 @@ import { NextRequest } from "next/server";
 // app/api/profile/student/courses/[id]/assignment/[aid]/route.ts
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string; aid: string } }
+  { params }: { params: Promise<{ id: string; aid: string }> }
 ) {
   try {
-    const assignmentId = parseInt(params.aid);
+    const {aid}= await params
+    const assignmentId = parseInt(aid);
     const { searchParams } = new URL(req.url);
     const studentId = searchParams.get('studentId');
 
@@ -49,10 +50,11 @@ export async function GET(
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string; aid: string } }
+  { params }: { params: Promise<{ id: string; aid: string }>}
 ) {
   try {
-    const assignmentId = parseInt(params.aid);
+    const {aid, id} = await params
+    const assignmentId = parseInt(aid);
     const body = await req.json();
     const { studentId, attachments } = body;
 

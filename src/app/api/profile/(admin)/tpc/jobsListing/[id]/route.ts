@@ -4,10 +4,11 @@ import { NextRequest } from "next/server";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  {params}: {params: Promise<{ id: string }>}
 ) {
   try {
-    const jobId = parseInt(params.id);
+    const {id } = await params
+    const jobId = parseInt(id);
 
     const job = await prisma.jobPosting.findUnique({
       where: { id: jobId },
@@ -30,10 +31,11 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  {params}: {params: Promise<{ id: string }>} 
 ) {
+  const { id } = await params;
   try {
-    const jobId = parseInt(params.id);
+    const jobId = parseInt(id);
     const body = await req.json();
 
     const job = await prisma.jobPosting.update({
@@ -66,10 +68,11 @@ export async function PUT(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  {params}: {params: Promise<{ id: string }>}
 ) {
   try {
-    const jobId = parseInt(params.id);
+    const {id} = await params
+    const jobId = parseInt(id);
 
     await prisma.jobPosting.delete({
       where: { id: jobId },
