@@ -1,825 +1,616 @@
-import { PrismaClient } from '@prisma/client';
+/**
+ * SEED SCRIPT for SmartCurriculum Platform
+ * 
+ * WARNING: This script will first DELETE ALL existing data in the database
+ * before populating it with mock data. Do not run this on a production database.
+ * 
+ * Usage:
+ * 1. Ensure you have `ts-node` and `bcryptjs` installed: npm install -D ts-node bcryptjs @types/bcryptjs
+ * 2. Update your `package.json` to add: "prisma": { "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts" }
+ * 3. Run `npx prisma db seed`.
+ */
+
+import {
+  PrismaClient,
+  UserRole,
+  UserStatus,
+  AttendanceStatus,
+  AttendanceMethod,
+  AssignmentStatus,
+  CourseStatus,
+  EventType,
+  EventStatus,
+  JobType,
+  JobStatus,
+  ApplicationStatus, // ADDED
+  ClubCategory,
+  NotificationType,
+  NotificationPriority,
+  FileType,
+  FileCategory,
+  CalendarEventType,
+} from '@prisma/client';
+import * as bcrypt from 'bcryptjs';
+
+// Import mock data
+import {
+  SAMPLE_STUDENTS,
+  SAMPLE_TEACHERS,
+  SAMPLE_COURSES,
+  SAMPLE_ATTENDANCE,
+  SAMPLE_ASSIGNMENTS,
+  SAMPLE_GRADES,
+  SAMPLE_EVENTS,
+  SAMPLE_COMPANIES,
+  SAMPLE_JOB_POSTINGS,
+  SAMPLE_CLUBS,
+  SAMPLE_NOTIFICATIONS,
+  SAMPLE_VAULT_FILES,
+  SAMPLE_CALENDAR_EVENTS,
+  SAMPLE_ANALYTICS,
+  SAMPLE_LEADERBOARD,
+  SAMPLE_DEPARTMENTS,
+} from '@/data/mockData';
 
 const prisma = new PrismaClient();
 
+// Helper function to safely convert strings to enums
+function toEnum<T extends Record<string, string>>(
+  value: string,
+  enumObj: T,
+  fallback: T[keyof T]
+): T[keyof T] {
+  const key = value.toUpperCase().replace(/\s+/g, '_').replace(/-/g, '_');
+  return (enumObj[key as keyof T] as T[keyof T]) || fallback;
+}
+
 async function main() {
   console.log('🌱 Starting database seeding...');
+  console.log('⚠️  WARNING: This will delete all existing data!');
 
-  // Clean existing data
-  console.log('🧹 Cleaning existing data...');
-  await prisma.leaderboardEntry.deleteMany();
-  await prisma.analyticsSnapshot.deleteMany();
-  await prisma.calendarEvent.deleteMany();
-  await prisma.submissionAttachment.deleteMany();
-  await prisma.assignmentAttachment.deleteMany();
-  await prisma.vaultFile.deleteMany();
-  await prisma.notification.deleteMany();
-  await prisma.clubEvent.deleteMany();
-  await prisma.clubAchievement.deleteMany();
-  await prisma.clubMember.deleteMany();
-  await prisma.clubSocialLink.deleteMany();
-  await prisma.club.deleteMany();
-  await prisma.jobSkill.deleteMany();
-  await prisma.jobRequirement.deleteMany();
-  await prisma.jobPosting.deleteMany();
-  await prisma.company.deleteMany();
-  await prisma.eventRegistration.deleteMany();
-  await prisma.eventTag.deleteMany();
-  await prisma.event.deleteMany();
-  await prisma.gradeItem.deleteMany();
-  await prisma.grade.deleteMany();
-  await prisma.submission.deleteMany();
-  await prisma.rubricCriteria.deleteMany();
-  await prisma.assignment.deleteMany();
-  await prisma.attendance.deleteMany();
-  await prisma.enrollment.deleteMany();
-  await prisma.schedule.deleteMany();
-  await prisma.course.deleteMany();
-  await prisma.departmentAchievement.deleteMany();
-  await prisma.badge.deleteMany();
-  await prisma.specialization.deleteMany();
-  await prisma.achievement.deleteMany();
-  await prisma.education.deleteMany();
-  await prisma.teacher.deleteMany();
-  await prisma.student.deleteMany();
-  await prisma.department.deleteMany();
-  await prisma.userSettings.deleteMany();
-  await prisma.user.deleteMany();
+  // ----------------------------------------
+  // 1. Clean up existing data (in correct order)
+  // ----------------------------------------
+  console.log('🧹 Cleaning up database...');
+  
+  try {
+    // Delete in order of dependencies (children first)
+    await prisma.notification.deleteMany();
+    await prisma.vaultFile.deleteMany();
+    await prisma.calendarEvent.deleteMany();
+    await prisma.analytics.deleteMany();
+    await prisma.leaderboardEntry.deleteMany();
+    await prisma.studentBadge.deleteMany();
+    await prisma.eventRegistration.deleteMany();
+    await prisma.jobApplication.deleteMany();
+    await prisma.clubMembership.deleteMany();
+    await prisma.clubEvent.deleteMany();
+    await prisma.rubricCriteria.deleteMany();
+    await prisma.studentAssignment.deleteMany();
+    await prisma.assignment.deleteMany();
+    await prisma.grade.deleteMany();
+    await prisma.attendanceRecord.deleteMany();
+    await prisma.courseEnrollment.deleteMany();
+    await prisma.courseSchedule.deleteMany();
+    await prisma.course.deleteMany();
+    await prisma.education.deleteMany();
+    await prisma.achievement.deleteMany();
+    await prisma.club.deleteMany();
+    await prisma.jobPosting.deleteMany();
+    await prisma.company.deleteMany();
+    await prisma.teacher.deleteMany();
+    await prisma.student.deleteMany();
+    await prisma.user.deleteMany();
+    await prisma.department.deleteMany();
 
-  // Create Departments
-  console.log('📚 Creating departments...');
-  const csDept = await prisma.department.create({
-    data: {
-      name: 'Computer Science and Engineering',
-      code: 'CSE',
-      hod: 'Dr. Rajesh Kumar',
-      faculty: 45,
-      studentsCount: 480,
-      coursesCount: 32,
-      labs: 8,
-      achievements: {
-        create: [
-          { description: 'Best Department Award 2024' },
-          { description: 'Research Excellence Award' },
-          { description: '100% Placement Record' }
-        ]
-      }
-    }
-  });
-
-  const eceDept = await prisma.department.create({
-    data: {
-      name: 'Electronics and Communication Engineering',
-      code: 'ECE',
-      hod: 'Dr. Priya Sharma',
-      faculty: 38,
-      studentsCount: 420,
-      coursesCount: 28,
-      labs: 6,
-      achievements: {
-        create: [
-          { description: 'Innovation Award 2024' },
-          { description: 'Industry Collaboration Excellence' }
-        ]
-      }
-    }
-  });
-
-  const mechDept = await prisma.department.create({
-    data: {
-      name: 'Mechanical Engineering',
-      code: 'MECH',
-      hod: 'Dr. Amit Verma',
-      faculty: 42,
-      studentsCount: 450,
-      coursesCount: 30,
-      labs: 7,
-      achievements: {
-        create: [
-          { description: 'Best Lab Facilities 2024' }
-        ]
-      }
-    }
-  });
-
-  // Create Users and Teachers
-  console.log('👨‍🏫 Creating teachers...');
-  const teacher1User = await prisma.user.create({
-    data: {
-      name: 'Dr. Sarah Johnson',
-      email: 'sarah.johnson@university.edu',
-      role: 'teacher',
-      status: 'active',
-      profileImage: 'https://i.pravatar.cc/150?img=1',
-      teacher: {
-        create: {
-          employeeId: 'EMP001',
-          departmentId: csDept.id,
-          designation: 'Professor',
-          phone: '+91-9876543210',
-          officeRoom: 'CS-201',
-          officeHours: 'Mon-Fri 2:00 PM - 4:00 PM',
-          joinDate: new Date('2015-08-15'),
-          totalStudents: 120,
-          rating: 4.7,
-          publications: 45,
-          experience: '12 years',
-          specializations: {
-            create: [
-              { name: 'Machine Learning' },
-              { name: 'Data Science' },
-              { name: 'Artificial Intelligence' }
-            ]
-          },
-          educations: {
-            create: [
-              { degree: 'Ph.D. in Computer Science', university: 'MIT', year: '2012' },
-              { degree: 'M.Tech in AI', university: 'Stanford', year: '2008' }
-            ]
-          },
-          achievements: {
-            create: [
-              { title: 'Best Teacher Award', year: '2023' },
-              { title: 'Research Excellence Award', year: '2022' }
-            ]
-          }
-        }
-      },
-      userSettings: {
-        create: {
-          emailNotifications: true,
-          pushNotifications: true,
-          theme: 'light',
-          language: 'en',
-          timezone: 'Asia/Kolkata'
-        }
-      }
-    },
-    include: { teacher: true }
-  });
-
-  const teacher2User = await prisma.user.create({
-    data: {
-      name: 'Prof. Michael Chen',
-      email: 'michael.chen@university.edu',
-      role: 'teacher',
-      status: 'active',
-      profileImage: 'https://i.pravatar.cc/150?img=2',
-      teacher: {
-        create: {
-          employeeId: 'EMP002',
-          departmentId: csDept.id,
-          designation: 'Associate Professor',
-          phone: '+91-9876543211',
-          officeRoom: 'CS-202',
-          officeHours: 'Tue-Thu 3:00 PM - 5:00 PM',
-          joinDate: new Date('2018-01-10'),
-          totalStudents: 90,
-          rating: 4.5,
-          publications: 28,
-          experience: '8 years',
-          specializations: {
-            create: [
-              { name: 'Database Systems' },
-              { name: 'Cloud Computing' }
-            ]
-          },
-          educations: {
-            create: [
-              { degree: 'Ph.D. in Database Systems', university: 'Berkeley', year: '2016' }
-            ]
-          },
-          achievements: {
-            create: [
-              { title: 'Innovation in Teaching', year: '2023' }
-            ]
-          }
-        }
-      }
-    },
-    include: { teacher: true }
-  });
-
-  // Create Students
-  console.log('👨‍🎓 Creating students...');
-  const studentUsers = [];
-  const studentProfiles = [
-    { name: 'Rahul Sharma', rollNo: 'CS21001', cgpa: 9.2, attendance: 92, points: 850, semester: 6 },
-    { name: 'Priya Patel', rollNo: 'CS21002', cgpa: 8.8, attendance: 95, points: 780, semester: 6 },
-    { name: 'Amit Kumar', rollNo: 'CS21003', cgpa: 8.5, attendance: 88, points: 720, semester: 6 },
-    { name: 'Sneha Reddy', rollNo: 'CS21004', cgpa: 9.0, attendance: 90, points: 800, semester: 6 },
-    { name: 'Vikram Singh', rollNo: 'CS21005', cgpa: 8.3, attendance: 85, points: 680, semester: 6 },
-    { name: 'Anjali Desai', rollNo: 'CS21006', cgpa: 8.9, attendance: 93, points: 760, semester: 6 },
-    { name: 'Rohan Gupta', rollNo: 'CS21007', cgpa: 8.7, attendance: 89, points: 740, semester: 6 },
-    { name: 'Kavya Iyer', rollNo: 'CS21008', cgpa: 9.1, attendance: 94, points: 820, semester: 6 },
-  ];
-
-  for (let i = 0; i < studentProfiles.length; i++) {
-    const profile = studentProfiles[i];
-    const user = await prisma.user.create({
-      data: {
-        name: profile.name,
-        email: `${profile.rollNo.toLowerCase()}@student.edu`,
-        role: 'student',
-        status: 'active',
-        profileImage: `https://i.pravatar.cc/150?img=${i + 10}`,
-        student: {
-          create: {
-            rollNo: profile.rollNo,
-            departmentId: csDept.id,
-            batch: '2021',
-            semester: profile.semester,
-            section: 'A',
-            cgpa: profile.cgpa,
-            attendance: profile.attendance,
-            phone: `+91-98765432${10 + i}`,
-            dateOfBirth: new Date('2003-05-15'),
-            address: `${i + 1}, Student Hostel, University Campus`,
-            guardianName: `Guardian of ${profile.name}`,
-            guardianPhone: `+91-98765433${10 + i}`,
-            joinDate: new Date('2021-08-01'),
-            points: profile.points,
-            rank: i + 1,
-            badges: {
-              create: [
-                { name: 'Early Bird', issuedAt: new Date('2023-09-01') },
-                { name: 'Perfect Attendance', issuedAt: new Date('2023-10-15') }
-              ]
-            }
-          }
-        },
-        userSettings: {
-          create: {
-            emailNotifications: true,
-            pushNotifications: true,
-            theme: 'dark',
-            language: 'en',
-            timezone: 'Asia/Kolkata'
-          }
-        }
-      },
-      include: { student: true }
-    });
-    studentUsers.push(user);
+    console.log('✅ Database cleaned.');
+  } catch (error) {
+    console.error('❌ Error cleaning database:', error);
+    throw error;
   }
 
-  // Create Courses
-  console.log('📖 Creating courses...');
-  const course1 = await prisma.course.create({
-    data: {
-      code: 'CS601',
-      name: 'Machine Learning',
-      credits: 4,
-      semester: 6,
-      departmentId: csDept.id,
-      instructorId: teacher1User.teacher!.id,
-      enrolledCount: 8,
-      maxCapacity: 60,
-      syllabus: 'Introduction to ML, Supervised Learning, Unsupervised Learning, Neural Networks',
-      description: 'Comprehensive course covering fundamental and advanced machine learning concepts',
-      progress: 65,
-      status: 'Active',
-      schedules: {
-        create: [
-          { day: 'Monday', time: '9:00 AM - 10:30 AM', room: 'CS-Lab1' },
-          { day: 'Wednesday', time: '9:00 AM - 10:30 AM', room: 'CS-Lab1' },
-          { day: 'Friday', time: '11:00 AM - 12:30 PM', room: 'CS-101' }
-        ]
-      }
-    }
+  // ----------------------------------------
+  // 2. Hash a dummy password
+  // ----------------------------------------
+  const hashedPassword = await bcrypt.hash('password123', 10);
+
+  // ----------------------------------------
+  // 3. Seed independent models
+  // ----------------------------------------
+  console.log('📚 Seeding Departments...');
+  await prisma.department.createMany({
+    data: SAMPLE_DEPARTMENTS.map(d => ({
+      name: d.name,
+      code: d.code,
+      hod: d.hod,
+      facultyCount: d.faculty,
+      studentCount: d.students,
+      courseCount: d.courses,
+      labCount: d.labs,
+      achievements: d.achievements || [],
+    })),
   });
+  console.log(`✅ Created ${SAMPLE_DEPARTMENTS.length} departments`);
 
-  const course2 = await prisma.course.create({
-    data: {
-      code: 'CS602',
-      name: 'Database Management Systems',
-      credits: 4,
-      semester: 6,
-      departmentId: csDept.id,
-      instructorId: teacher2User.teacher!.id,
-      enrolledCount: 8,
-      maxCapacity: 60,
-      syllabus: 'RDBMS, SQL, NoSQL, Transactions, Query Optimization',
-      description: 'In-depth study of database systems and management',
-      progress: 55,
-      status: 'Active',
-      schedules: {
-        create: [
-          { day: 'Tuesday', time: '10:00 AM - 11:30 AM', room: 'CS-102' },
-          { day: 'Thursday', time: '10:00 AM - 11:30 AM', room: 'CS-102' }
-        ]
-      }
-    }
-  });
-
-  // Enroll Students in Courses
-  console.log('📝 Enrolling students in courses...');
-  for (const studentUser of studentUsers) {
-    await prisma.enrollment.create({
-      data: {
-        studentId: studentUser.student!.id,
-        courseId: course1.id,
-        status: 'enrolled',
-        progress: Math.random() * 40 + 50
-      }
-    });
-
-    await prisma.enrollment.create({
-      data: {
-        studentId: studentUser.student!.id,
-        courseId: course2.id,
-        status: 'enrolled',
-        progress: Math.random() * 40 + 45
-      }
-    });
-  }
-
-  // Create Attendance Records
-  console.log('✅ Creating attendance records...');
-  const attendanceStatuses: Array<'present' | 'absent' | 'late'> = ['present', 'present', 'present', 'present', 'absent', 'late'];
-  for (let day = 0; day < 10; day++) {
-    const date = new Date();
-    date.setDate(date.getDate() - day);
-    
-    for (const studentUser of studentUsers) {
-      await prisma.attendance.create({
+  console.log('🏢 Seeding Companies...');
+  const companies = await Promise.all(
+    SAMPLE_COMPANIES.map(company =>
+      prisma.company.create({
         data: {
-          studentId: studentUser.student!.id,
-          courseId: course1.id,
-          date: date,
-          status: attendanceStatuses[Math.floor(Math.random() * attendanceStatuses.length)],
-          markedAt: date,
-          method: 'QRCode'
-        }
+          name: company.name,
+          logo: company.logo,
+          industry: company.industry,
+          location: company.location,
+          employeeCount: company.employeeCount,
+          website: company.website,
+          description: company.description,
+          averagePackage: company.averagePackage,
+          recruitmentDrive: company.recruitmentDrive,
+          eligibilityCriteria: company.eligibilityCriteria,
+          contactPerson: company.contactPerson,
+          contactEmail: company.contactEmail,
+          status: toEnum(company.status, UserStatus, UserStatus.ACTIVE),
+        },
+      }),
+    ),
+  );
+  console.log(`✅ Created ${companies.length} companies`);
+
+  // ----------------------------------------
+  // 4. Seed Users and their profiles
+  // ----------------------------------------
+  console.log('👨‍🏫 Seeding Teachers...');
+  const teacherUsers = await Promise.all(
+    SAMPLE_TEACHERS.map(teacherData =>
+      prisma.user.create({
+        data: {
+          name: teacherData.name,
+          email: teacherData.email,
+          password: hashedPassword,
+          role: UserRole.TEACHER,
+          profileImage: teacherData.profileImage,
+          status: UserStatus.ACTIVE,
+          teacher: {
+            create: {
+              employeeId: teacherData.employeeId,
+              department: teacherData.department,
+              designation: teacherData.designation,
+              specialization: teacherData.specialization,
+              phone: teacherData.phone,
+              officeRoom: teacherData.officeRoom,
+              officeHours: teacherData.officeHours,
+              joinDate: new Date(teacherData.joinDate),
+              totalStudents: teacherData.totalStudents,
+              rating: teacherData.rating,
+              publications: teacherData.publications,
+              experience: teacherData.experience,
+              education: {
+                create: teacherData.education?.map(edu => ({
+                  degree: edu.degree,
+                  university: edu.university,
+                  year: edu.year,
+                })) || [],
+              },
+              achievements: {
+                create: teacherData.achievements?.map(ach => ({
+                  title: ach.title,
+                  year: ach.year,
+                })) || [],
+              },
+            },
+          },
+        },
+        include: { teacher: true },
+      }),
+    ),
+  );
+  const teachers = teacherUsers.map(u => u.teacher!);
+  console.log(`✅ Created ${teachers.length} teachers`);
+
+  console.log('👨‍🎓 Seeding Students...');
+  const studentUsers = await Promise.all(
+    SAMPLE_STUDENTS.map(studentData =>
+      prisma.user.create({
+        data: {
+          name: studentData.name,
+          email: studentData.email,
+          password: hashedPassword,
+          role: UserRole.STUDENT,
+          profileImage: studentData.profileImage,
+          status: toEnum(studentData.status, UserStatus, UserStatus.ACTIVE),
+          student: {
+            create: {
+              rollNo: studentData.rollNo,
+              department: studentData.department,
+              batch: studentData.batch,
+              semester: studentData.semester,
+              section: studentData.section,
+              cgpa: studentData.cgpa,
+              attendance: studentData.attendance,
+              phone: studentData.phone,
+              dateOfBirth: new Date(studentData.dateOfBirth),
+              address: studentData.address,
+              guardianName: studentData.guardianName,
+              guardianPhone: studentData.guardianPhone,
+              joinDate: new Date(studentData.joinDate),
+              points: studentData.points,
+              rank: studentData.rank,
+              badges: {
+                create: studentData.badges.map(badgeName => ({
+                  badge: badgeName,
+                })),
+              },
+            },
+          },
+        },
+        include: { student: true },
+      }),
+    ),
+  );
+  const students = studentUsers.map(u => u.student!);
+  console.log(`✅ Created ${students.length} students`);
+
+  // ----------------------------------------
+  // 5. Seed Courses and Assignments
+  // ----------------------------------------
+  console.log('📖 Seeding Courses...');
+  const courses = await Promise.all(
+    SAMPLE_COURSES.map(courseData => {
+      const instructorIndex = courseData.instructorId - 1;
+      if (!teachers[instructorIndex]) {
+        throw new Error(`Teacher with index ${instructorIndex} not found for course ${courseData.code}`);
+      }
+      
+      return prisma.course.create({
+        data: {
+          code: courseData.code,
+          name: courseData.name,
+          credits: courseData.credits,
+          semester: courseData.semester,
+          department: courseData.department,
+          instructorId: teachers[instructorIndex].id,
+          maxCapacity: courseData.maxCapacity,
+          syllabus: courseData.syllabus,
+          description: courseData.description,
+          progress: courseData.progress,
+          status: toEnum(courseData.status, CourseStatus, CourseStatus.ACTIVE),
+          schedules: {
+            create: courseData.schedule.map(s => ({
+              day: s.day,
+              time: s.time,
+              room: s.room,
+            })),
+          },
+        },
       });
-    }
-  }
+    }),
+  );
+  console.log(`✅ Created ${courses.length} courses`);
 
-  // Create Assignments
-  console.log('📋 Creating assignments...');
-  const assignment1 = await prisma.assignment.create({
-    data: {
-      title: 'Linear Regression Implementation',
-      courseId: course1.id,
-      description: 'Implement linear regression from scratch using Python',
-      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      totalPoints: 100,
-      status: 'InProgress',
-      rubric: {
-        create: [
-          { criteria: 'Code Quality', points: 30 },
-          { criteria: 'Documentation', points: 20 },
-          { criteria: 'Accuracy', points: 30 },
-          { criteria: 'Report', points: 20 }
-        ]
+  console.log('📝 Seeding Assignments...');
+  const assignments = await Promise.all(
+    SAMPLE_ASSIGNMENTS.map(assignData => {
+      const courseIndex = assignData.courseId - 1;
+      if (!courses[courseIndex]) {
+        throw new Error(`Course with index ${courseIndex} not found for assignment ${assignData.title}`);
       }
-    }
+
+      return prisma.assignment.create({
+        data: {
+          title: assignData.title,
+          courseId: courses[courseIndex].id,
+          description: assignData.description,
+          dueDate: new Date(assignData.dueDate),
+          totalPoints: assignData.totalPoints,
+          attachments: assignData.attachments || [],
+          rubrics: {
+            create: assignData.rubric?.map(r => ({
+              criteria: r.criteria,
+              points: r.points,
+            })) || [],
+          },
+        },
+      });
+    }),
+  );
+  console.log(`✅ Created ${assignments.length} assignments`);
+
+  // ----------------------------------------
+  // 6. Seed Relational Data
+  // ----------------------------------------
+  console.log('🔗 Seeding Course Enrollments...');
+  await prisma.courseEnrollment.createMany({
+    data: [
+      { studentId: students[0].id, courseId: courses[0].id },
+      { studentId: students[0].id, courseId: courses[1].id },
+    ],
   });
 
-  const assignment2 = await prisma.assignment.create({
-    data: {
-      title: 'SQL Query Optimization',
-      courseId: course2.id,
-      description: 'Optimize given SQL queries and write a report',
-      dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
-      totalPoints: 100,
-      status: 'InProgress',
-      rubric: {
-        create: [
-          { criteria: 'Query Optimization', points: 40 },
-          { criteria: 'Explanation', points: 30 },
-          { criteria: 'Performance Analysis', points: 30 }
-        ]
-      }
+  console.log('✅ Seeding Attendance Records...');
+  const validAttendanceRecords = SAMPLE_ATTENDANCE.map(att => {
+    const studentIndex = att.studentId - 1;
+    const courseIndex = att.courseId - 1;
+    
+    if (!students[studentIndex] || !courses[courseIndex]) {
+      console.warn(`⚠️  Skipping attendance: student ${att.studentId} or course ${att.courseId} not found`);
+      return null;
     }
-  });
+    
+    return {
+      studentId: students[studentIndex].id,
+      courseId: courses[courseIndex].id,
+      date: new Date(att.date),
+      status: toEnum(att.status, AttendanceStatus, AttendanceStatus.PRESENT),
+      markedAt: att.markedAt ? new Date(att.markedAt) : new Date(), // FIXED
+      method: att.method ? toEnum(att.method, AttendanceMethod, AttendanceMethod.QR_CODE) : null,
+      latitude: att.latitude,
+      longitude: att.longitude,
+    };
+  }).filter(Boolean);
 
-  // Create Submissions
-  console.log('📤 Creating submissions...');
-  for (const studentUser of studentUsers.slice(0, 5)) {
-    await prisma.submission.create({
-      data: {
-        assignmentId: assignment1.id,
-        studentId: studentUser.student!.id,
-        submittedAt: new Date(Date.now() - Math.random() * 2 * 24 * 60 * 60 * 1000),
-        grade: 75 + Math.random() * 20,
-        feedback: 'Good work! Consider improving documentation.',
-        status: 'Graded',
-        earnedPoints: Math.floor(75 + Math.random() * 20)
-      }
+  if (validAttendanceRecords.length > 0) {
+    await prisma.attendanceRecord.createMany({
+      data: validAttendanceRecords as any[],
     });
   }
 
-  // Create Grades
-  console.log('🎯 Creating grades...');
-  for (const studentUser of studentUsers) {
-    const grade1 = await prisma.grade.create({
+  console.log('📤 Seeding Student Assignments...');
+  if (assignments.length >= 2 && SAMPLE_ASSIGNMENTS[1].submittedAt) {
+    await prisma.studentAssignment.create({
       data: {
-        studentId: studentUser.student!.id,
-        courseId: course1.id,
-        totalScore: 85 + Math.random() * 10,
-        grade: 'A',
-        letterGrade: 'A',
-        items: {
-          create: [
-            { name: 'Mid-term', score: 38, total: 40 },
-            { name: 'Assignments', score: 27, total: 30 },
-            { name: 'Final', score: 47, total: 50 }
-          ]
-        }
-      }
-    });
-
-    const grade2 = await prisma.grade.create({
-      data: {
-        studentId: studentUser.student!.id,
-        courseId: course2.id,
-        totalScore: 80 + Math.random() * 10,
-        grade: 'A',
-        letterGrade: 'A-',
-        items: {
-          create: [
-            { name: 'Mid-term', score: 36, total: 40 },
-            { name: 'Projects', score: 26, total: 30 },
-            { name: 'Final', score: 45, total: 50 }
-          ]
-        }
-      }
-    });
-  }
-
-  // Create Events
-  console.log('🎉 Creating events...');
-  const event1 = await prisma.event.create({
-    data: {
-      title: 'Tech Fest 2024',
-      type: 'Conference',
-      date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      time: '10:00 AM',
-      location: 'Main Auditorium',
-      organizer: 'Tech Club',
-      description: 'Annual technical festival featuring competitions, workshops, and guest lectures',
-      registeredCount: 150,
-      maxCapacity: 500,
-      status: 'RegistrationOpen',
-      image: 'https://picsum.photos/800/400?random=1',
-      tags: {
-        create: [
-          { tag: 'Technology' },
-          { tag: 'Innovation' },
-          { tag: 'Competition' }
-        ]
-      }
-    }
-  });
-
-  const event2 = await prisma.event.create({
-    data: {
-      title: 'Machine Learning Workshop',
-      type: 'Workshop',
-      date: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
-      time: '2:00 PM',
-      location: 'CS Lab 1',
-      organizer: 'AI Club',
-      description: 'Hands-on workshop on building ML models',
-      registeredCount: 45,
-      maxCapacity: 50,
-      status: 'RegistrationOpen',
-      image: 'https://picsum.photos/800/400?random=2',
-      tags: {
-        create: [
-          { tag: 'AI' },
-          { tag: 'Machine Learning' },
-          { tag: 'Workshop' }
-        ]
-      }
-    }
-  });
-
-  // Register students for events
-  console.log('🎫 Registering students for events...');
-  for (const studentUser of studentUsers.slice(0, 4)) {
-    await prisma.eventRegistration.create({
-      data: {
-        eventId: event1.id,
-        studentId: studentUser.student!.id
-      }
-    });
-  }
-
-  // Create Companies
-  console.log('🏢 Creating companies...');
-  const company1 = await prisma.company.create({
-    data: {
-      name: 'Tech Giants Inc.',
-      logo: 'https://logo.clearbit.com/google.com',
-      industry: 'Information Technology',
-      location: 'Bangalore, India',
-      employeeCount: '10000+',
-      website: 'https://techgiants.com',
-      description: 'Leading technology company specializing in AI and Cloud solutions',
-      jobOpenings: 5,
-      averagePackage: '15 LPA',
-      recruitmentDrive: 'January 2025',
-      eligibilityCriteria: 'CGPA > 7.5, No active backlogs',
-      contactPerson: 'HR Manager',
-      contactEmail: 'recruitment@techgiants.com',
-      status: 'Active'
-    }
-  });
-
-  const company2 = await prisma.company.create({
-    data: {
-      name: 'StartupXYZ',
-      logo: 'https://logo.clearbit.com/microsoft.com',
-      industry: 'Software Development',
-      location: 'Hyderabad, India',
-      employeeCount: '500-1000',
-      website: 'https://startupxyz.com',
-      description: 'Innovative startup focusing on fintech solutions',
-      jobOpenings: 3,
-      averagePackage: '12 LPA',
-      recruitmentDrive: 'February 2025',
-      eligibilityCriteria: 'CGPA > 7.0',
-      contactPerson: 'Talent Acquisition Lead',
-      contactEmail: 'careers@startupxyz.com',
-      status: 'Active'
-    }
-  });
-
-  // Create Job Postings
-  console.log('💼 Creating job postings...');
-  await prisma.jobPosting.create({
-    data: {
-      companyId: company1.id,
-      title: 'Software Development Engineer',
-      type: 'Fulltime',
-      location: 'Bangalore',
-      package: '15-18 LPA',
-      description: 'Looking for talented software engineers to join our team',
-      applicationDeadline: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000),
-      appliedCount: 35,
-      shortlistedCount: 12,
-      status: 'Open',
-      requirements: {
-        create: [
-          { requirement: 'Strong programming skills in Java/Python' },
-          { requirement: 'Understanding of data structures and algorithms' },
-          { requirement: 'Good problem-solving abilities' }
-        ]
+        studentId: students[0].id,
+        assignmentId: assignments[1].id,
+        status: AssignmentStatus.GRADED,
+        submittedAt: new Date(SAMPLE_ASSIGNMENTS[1].submittedAt),
+        submittedPoints: SAMPLE_ASSIGNMENTS[1].submittedPoints,
+        grade: SAMPLE_ASSIGNMENTS[1].grade,
+        feedback: SAMPLE_ASSIGNMENTS[1].feedback,
+        attachments: SAMPLE_ASSIGNMENTS[1].attachments || [],
       },
-      skills: {
-        create: [
-          { skill: 'Java' },
-          { skill: 'Python' },
-          { skill: 'SQL' },
-          { skill: 'AWS' }
-        ]
-      }
-    }
-  });
+    });
 
-  await prisma.jobPosting.create({
-    data: {
-      companyId: company2.id,
-      title: 'Data Science Intern',
-      type: 'Internship',
-      location: 'Hyderabad',
-      stipend: '25,000/month',
-      duration: '6 months',
-      description: 'Internship opportunity in data science and machine learning',
-      applicationDeadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      appliedCount: 28,
-      shortlistedCount: 8,
-      status: 'Open',
-      requirements: {
-        create: [
-          { requirement: 'Knowledge of Python and ML libraries' },
-          { requirement: 'Understanding of statistics' }
-        ]
-      },
-      skills: {
-        create: [
-          { skill: 'Python' },
-          { skill: 'TensorFlow' },
-          { skill: 'Pandas' },
-          { skill: 'NumPy' }
-        ]
-      }
-    }
-  });
-
-  // Create Clubs
-  console.log('🎭 Creating clubs...');
-  const club1 = await prisma.club.create({
-    data: {
-      name: 'Coding Club',
-      logo: 'https://picsum.photos/200/200?random=10',
-      category: 'Technical',
-      description: 'Promoting coding culture and competitive programming',
-      memberCount: 120,
-      president: 'Rahul Sharma',
-      vicePresident: 'Priya Patel',
-      faculty: 'Dr. Sarah Johnson',
-      email: 'codingclub@university.edu',
-      upcomingEvents: 3,
-      pastEvents: 15,
-      status: 'active',
-      socialLinks: {
-        create: [
-          { platform: 'Instagram', url: 'https://instagram.com/codingclub' },
-          { platform: 'LinkedIn', url: 'https://linkedin.com/company/codingclub' }
-        ]
-      },
-      achievements: {
-        create: [
-          { description: 'Won Inter-College Hackathon 2024' },
-          { description: 'Organized 10+ workshops in 2024' }
-        ]
-      }
-    }
-  });
-
-  const club2 = await prisma.club.create({
-    data: {
-      name: 'AI & ML Club',
-      logo: 'https://picsum.photos/200/200?random=11',
-      category: 'Technical',
-      description: 'Exploring artificial intelligence and machine learning',
-      memberCount: 85,
-      president: 'Amit Kumar',
-      vicePresident: 'Sneha Reddy',
-      faculty: 'Dr. Sarah Johnson',
-      email: 'aimlclub@university.edu',
-      upcomingEvents: 2,
-      pastEvents: 8,
-      status: 'active',
-      socialLinks: {
-        create: [
-          { platform: 'Twitter', url: 'https://twitter.com/aimlclub' },
-          { platform: 'GitHub', url: 'https://github.com/aimlclub' }
-        ]
-      },
-      achievements: {
-        create: [
-          { description: 'Published research papers in ML conferences' }
-        ]
-      }
-    }
-  });
-
-  // Add club members
-  console.log('👥 Adding club members...');
-  for (const studentUser of studentUsers.slice(0, 4)) {
-    await prisma.clubMember.create({
+    await prisma.studentAssignment.create({
       data: {
-        clubId: club1.id,
-        studentId: studentUser.student!.id,
-        role: 'Member'
-      }
+        studentId: students[0].id,
+        assignmentId: assignments[0].id,
+        status: AssignmentStatus.IN_PROGRESS,
+        attachments: [],
+      },
     });
   }
 
-  // Link clubs to events
-  await prisma.clubEvent.create({
-    data: {
-      clubId: club1.id,
-      eventId: event1.id
-    }
+  console.log('📊 Seeding Grades...');
+  const validGrades = SAMPLE_GRADES.filter(g => {
+    const studentIndex = g.studentId - 1;
+    const courseIndex = g.courseId - 1;
+    return students[studentIndex] && courses[courseIndex];
+  }).map(g => {
+    const studentIndex = g.studentId - 1;
+    const courseIndex = g.courseId - 1;
+    
+    return {
+      studentId: students[studentIndex].id,
+      courseId: courses[courseIndex].id,
+      assignments: g.assignments,
+      quizzes: g.quizzes,
+      finalExam: g.finalExam,
+      totalScore: g.totalScore,
+      grade: g.grade,
+      letterGrade: g.letterGrade,
+    };
   });
 
-  await prisma.clubEvent.create({
-    data: {
-      clubId: club2.id,
-      eventId: event2.id
-    }
-  });
-
-  // Create Notifications
-  console.log('🔔 Creating notifications...');
-  for (const studentUser of studentUsers) {
-    await prisma.notification.create({
-      data: {
-        userId: studentUser.id,
-        type: 'assignment',
-        title: 'New Assignment Posted',
-        message: 'Linear Regression Implementation assignment has been posted',
-        priority: 'high',
-        link: '/assignments',
-        icon: '📝'
-      }
-    });
-
-    await prisma.notification.create({
-      data: {
-        userId: studentUser.id,
-        type: 'event',
-        title: 'Tech Fest Registration Open',
-        message: 'Register now for Tech Fest 2024',
-        priority: 'medium',
-        link: '/events',
-        icon: '🎉'
-      }
+  if (validGrades.length > 0) {
+    await prisma.grade.createMany({
+      data: validGrades,
     });
   }
 
-  // Create Leaderboard Entries
-  console.log('🏆 Creating leaderboard entries...');
-  const sortedStudents = [...studentUsers].sort((a, b) => b.student!.points - a.student!.points);
-  for (let i = 0; i < sortedStudents.length; i++) {
+  // ----------------------------------------
+  // 7. Seed Events, Jobs, and Clubs
+  // ----------------------------------------
+  console.log('🎉 Seeding Events...');
+  const events = await Promise.all(
+    SAMPLE_EVENTS.map(eventData =>
+      prisma.event.create({
+        data: {
+          title: eventData.title,
+          type: toEnum(eventData.type, EventType, EventType.SEMINAR),
+          date: new Date(eventData.date),
+          time: eventData.time,
+          location: eventData.location,
+          organizer: eventData.organizer,
+          description: eventData.description,
+          maxCapacity: eventData.maxCapacity,
+          status: toEnum(eventData.status, EventStatus, EventStatus.UPCOMING),
+          tags: eventData.tags || [],
+          image: eventData.image || null, // FIXED
+        },
+      }),
+    ),
+  );
+  console.log(`✅ Created ${events.length} events`);
+
+  console.log('💼 Seeding Job Postings...');
+  await prisma.jobPosting.createMany({
+    data: SAMPLE_JOB_POSTINGS.map(job => {
+      const companyIndex = job.companyId - 1;
+      
+      return {
+        companyId: companies[companyIndex].id,
+        title: job.title,
+        type: job.type === 'Full-time' ? JobType.FULL_TIME : JobType.INTERNSHIP,
+        location: job.location,
+        duration: job.duration,
+        stipend: job.stipend,
+        package: job.package,
+        description: job.description,
+        requirements: job.requirements,
+        skills: job.skills,
+        applicationDeadline: new Date(job.applicationDeadline),
+        status: toEnum(job.status, JobStatus, JobStatus.OPEN),
+        postedDate: new Date(job.postedDate),
+      };
+    }),
+  });
+  console.log(`✅ Created ${SAMPLE_JOB_POSTINGS.length} job postings`);
+
+  console.log('🎭 Seeding Clubs...');
+  await prisma.club.createMany({
+    data: SAMPLE_CLUBS.map(club => ({
+      name: club.name,
+      logo: club.logo,
+      category: toEnum(club.category, ClubCategory, ClubCategory.TECHNICAL),
+      description: club.description,
+      president: club.president,
+      vicePresident: club.vicePresident,
+      facultyId: teachers[0].id,
+      email: club.email,
+      instagram: club.socialMedia?.instagram,
+      twitter: club.socialMedia?.twitter,
+      linkedin: club.socialMedia?.linkedin,
+      achievements: club.achievements || [],
+      status: toEnum(club.status, UserStatus, UserStatus.ACTIVE),
+    })),
+  });
+  console.log(`✅ Created ${SAMPLE_CLUBS.length} clubs`);
+
+  // ----------------------------------------
+  // 8. Seed User-Specific Data
+  // ----------------------------------------
+  console.log('🔔 Seeding Notifications...');
+  await prisma.notification.createMany({
+    data: SAMPLE_NOTIFICATIONS.map(n => ({
+      userId: studentUsers[0].id,
+      type: toEnum(n.type, NotificationType, NotificationType.ANNOUNCEMENT),
+      title: n.title,
+      message: n.message,
+      timestamp: new Date(n.timestamp),
+      read: n.read,
+      priority: toEnum(n.priority, NotificationPriority, NotificationPriority.MEDIUM),
+      link: n.link,
+      icon: n.icon,
+    })),
+  });
+
+  console.log('📁 Seeding Vault Files...');
+  await prisma.vaultFile.createMany({
+    data: SAMPLE_VAULT_FILES.map(file => ({
+      userId: studentUsers[0].id,
+      name: file.name,
+      type: toEnum(file.type, FileType, FileType.DOCUMENT),
+      size: file.size,
+      category: toEnum(file.category, FileCategory, FileCategory.DOCUMENTS),
+      tags: file.tags,
+      uploadedAt: new Date(file.uploadedAt),
+      url: 'https://example.com/placeholder.pdf',
+    })),
+  });
+
+  console.log('📅 Seeding Calendar Events...');
+  if (SAMPLE_CALENDAR_EVENTS.length > 0 && courses[0]) {
+    await prisma.calendarEvent.create({
+      data: {
+        title: SAMPLE_CALENDAR_EVENTS[0].title,
+        type: CalendarEventType.CLASS,
+        date: new Date(SAMPLE_CALENDAR_EVENTS[0].date),
+        startTime: SAMPLE_CALENDAR_EVENTS[0].startTime,
+        endTime: SAMPLE_CALENDAR_EVENTS[0].endTime,
+        location: SAMPLE_CALENDAR_EVENTS[0].location,
+        instructor: SAMPLE_CALENDAR_EVENTS[0].instructor,
+        color: SAMPLE_CALENDAR_EVENTS[0].color,
+        courseId: courses[0].id,
+      },
+    });
+  }
+  
+  if (SAMPLE_CALENDAR_EVENTS.length > 1) {
+    await prisma.calendarEvent.create({
+      data: {
+        title: SAMPLE_CALENDAR_EVENTS[1].title,
+        type: CalendarEventType.DEADLINE,
+        date: new Date(SAMPLE_CALENDAR_EVENTS[1].date),
+        startTime: SAMPLE_CALENDAR_EVENTS[1].startTime,
+        endTime: SAMPLE_CALENDAR_EVENTS[1].endTime,
+        location: SAMPLE_CALENDAR_EVENTS[1].location,
+        instructor: SAMPLE_CALENDAR_EVENTS[1].instructor,
+        color: SAMPLE_CALENDAR_EVENTS[1].color,
+      },
+    });
+  }
+  
+  if (SAMPLE_CALENDAR_EVENTS.length > 2 && events.length > 0) {
+    await prisma.calendarEvent.create({
+      data: {
+        title: SAMPLE_CALENDAR_EVENTS[2].title,
+        type: CalendarEventType.EVENT,
+        date: new Date(SAMPLE_CALENDAR_EVENTS[2].date),
+        startTime: SAMPLE_CALENDAR_EVENTS[2].startTime,
+        endTime: SAMPLE_CALENDAR_EVENTS[2].endTime,
+        location: SAMPLE_CALENDAR_EVENTS[2].location,
+        instructor: SAMPLE_CALENDAR_EVENTS[2].instructor,
+        color: SAMPLE_CALENDAR_EVENTS[2].color,
+        eventId: events[0].id,
+      },
+    });
+  }
+
+  // ----------------------------------------
+  // 9. Seed Analytics and Leaderboard
+  // ----------------------------------------
+  console.log('📈 Seeding Analytics...');
+  await prisma.analytics.create({
+    data: {
+      totalStudents: SAMPLE_ANALYTICS.studentPerformance.totalStudents,
+      activeStudents: SAMPLE_ANALYTICS.studentPerformance.activeStudents,
+      topPerformers: SAMPLE_ANALYTICS.studentPerformance.topPerformers,
+      atRiskStudents: SAMPLE_ANALYTICS.studentPerformance.atRiskStudents,
+      overallAttendance: SAMPLE_ANALYTICS.studentPerformance.overallAttendance,
+      overallCGPA: SAMPLE_ANALYTICS.studentPerformance.overallCGPA,
+      totalPlacements: SAMPLE_ANALYTICS.placementStats.totalPlacements,
+      averagePackage: SAMPLE_ANALYTICS.placementStats.averagePackage,
+      highestPackage: SAMPLE_ANALYTICS.placementStats.highestPackage,
+      companiesVisited: SAMPLE_ANALYTICS.placementStats.companiesVisited,
+      offersReceived: SAMPLE_ANALYTICS.placementStats.offersReceived, // FIXED
+      placementRate: SAMPLE_ANALYTICS.placementStats.placementRate,
+      totalCourses: SAMPLE_ANALYTICS.courseStats.totalCourses,
+      activeCourses: SAMPLE_ANALYTICS.courseStats.activeCourses,
+      completedCourses: SAMPLE_ANALYTICS.courseStats.completedCourses,
+      averageClassSize: SAMPLE_ANALYTICS.courseStats.averageClassSize,
+      monthlyAttendanceData: "Low", // FIXED
+    },
+  });
+
+  console.log('🏆 Seeding Leaderboard...');
+  for (let i = 0; i < Math.min(students.length, SAMPLE_LEADERBOARD.length); i++) {
     await prisma.leaderboardEntry.create({
       data: {
-        rank: i + 1,
-        studentId: sortedStudents[i].student!.id,
-        points: sortedStudents[i].student!.points,
-        badges: 2,
-        avatar: sortedStudents[i].profileImage
-      }
+        studentId: students[i].id,
+        rank: SAMPLE_LEADERBOARD[i].rank,
+        name: SAMPLE_LEADERBOARD[i].name,
+        points: SAMPLE_LEADERBOARD[i].points,
+        badges: SAMPLE_STUDENTS[i].badges.length,
+        avatar: SAMPLE_STUDENTS[i].profileImage,
+      },
     });
   }
 
-  // Create Calendar Events
-  console.log('📅 Creating calendar events...');
-  await prisma.calendarEvent.create({
-    data: {
-      title: 'Machine Learning - Lecture',
-      type: 'class',
-      date: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000),
-      startTime: '9:00 AM',
-      endTime: '10:30 AM',
-      location: 'CS-Lab1',
-      instructor: 'Dr. Sarah Johnson',
-      description: 'Neural Networks and Deep Learning',
-      color: '#3b82f6'
-    }
-  });
-
-  await prisma.calendarEvent.create({
-    data: {
-      title: 'Mid-term Exam - DBMS',
-      type: 'exam',
-      date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      startTime: '10:00 AM',
-      endTime: '12:00 PM',
-      location: 'Main Hall',
-      description: 'Database Management Systems Mid-term',
-      color: '#ef4444'
-    }
-  });
-
-  await prisma.calendarEvent.create({
-    data: {
-      title: 'Assignment Deadline - ML',
-      type: 'deadline',
-      date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      startTime: '11:59 PM',
-      description: 'Linear Regression Implementation due',
-      color: '#f59e0b'
-    }
-  });
-
-  // Create Analytics Snapshot
-  console.log('📊 Creating analytics snapshot...');
-  await prisma.analyticsSnapshot.create({
-    data: {
-      overallAttendance: 89.5,
-      overallCGPA: 8.68,
-      totalStudents: 8,
-      activeStudents: 8,
-      topPerformers: 3,
-      atRiskStudents: 1,
-      totalPlacements: 145,
-      averagePackage: '12.5 LPA',
-      highestPackage: '45 LPA',
-      companiesVisited: 75,
-      offersReceived: 198,
-      placementRate: 92.5,
-      totalCourses: 2,
-      activeCourses: 2,
-      completedCourses: 0,
-      averageClassSize: 45.5
-    }
-  });
-
-  console.log('✅ Database seeding completed successfully!');
-  console.log(`
-📊 Summary:
-- Departments: 3
-- Teachers: 2
-- Students: 8
-- Courses: 2
-- Assignments: 2
-- Events: 2
-- Companies: 2
-- Job Postings: 2
-- Clubs: 2
-- Notifications: ${studentUsers.length * 2}
-  `);
+  console.log('\n✨ Seeding completed successfully! ✨\n');
+  console.log('📊 Summary:');
+  console.log(`   • ${teachers.length} teachers`);
+  console.log(`   • ${students.length} students`);
+  console.log(`   • ${courses.length} courses`);
+  console.log(`   • ${assignments.length} assignments`);
+  console.log(`   • ${events.length} events`);
+  console.log(`   • ${companies.length} companies`);
+  console.log(`   • ${SAMPLE_CLUBS.length} clubs`);
+  console.log('\n🔑 Default password for all users: password123\n');
 }
 
 main()
-  .catch((e) => {
-    console.error('❌ Error seeding database:', e);
+  .catch(e => {
+    console.error('\n❌ An error occurred during seeding:\n');
+    console.error(e);
     process.exit(1);
   })
   .finally(async () => {
