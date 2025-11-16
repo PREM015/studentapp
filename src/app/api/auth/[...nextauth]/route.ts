@@ -12,20 +12,22 @@ const handler = NextAuth({
 
   callbacks: {
     async jwt({ token, account, profile }) {
-      // First login → extract groups from id_token
+      // Save the Cognito userId (sub field)
       if (account?.id_token) {
         const payload = JSON.parse(
           Buffer.from(account.id_token.split('.')[1], 'base64').toString()
         );
-
         token.roles = payload['cognito:groups'] || [];
+        token.id = payload['sub'];
       }
+
       return token;
     },
 
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).roles = token.roles || [];
+        session.user.roles = token.roles || [];
+        session.user.id = token.id; // 🔵 ADD THIS
       }
       return session;
     },

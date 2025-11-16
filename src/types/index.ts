@@ -225,13 +225,21 @@ export interface Notification {
 
 export interface VaultFile {
   id: number;
+  userId: string; // Cognito user ID (String)
   name: string;
-  type: 'pdf' | 'image' | 'document' | 'video' | 'other';
+  type: 'IMAGE' | 'PDF' | 'DOCUMENT' | 'OTHER' | 'VIDEO'; 
   size: number;
-  uploadedAt: string;
-  category: 'Documents' | 'Certificates' | 'IDs' | 'Photos' | 'Other';
+  category:
+    | 'CERTIFICATES'
+    | 'DOCUMENTS'
+    | 'IDS'
+    | 'PHOTOS'
+    | 'ASSIGNMENTS'
+    | 'TRANSCRIPTS'
+    | 'OTHER';
   tags: string[];
   url?: string;
+  uploadedAt: string; // DateTime as ISO string
 }
 
 export interface CalendarEvent {
