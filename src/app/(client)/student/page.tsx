@@ -1,9 +1,5 @@
-import StudentMobileApp from "@/components/StudentMobileApp"
+import { redirect } from 'next/navigation';
 
-function page() {
-  return (
-   <StudentMobileApp/>
-  )
+export default function StudentPage() {
+  redirect('/student/dashboard');
 }
-
-export default page
